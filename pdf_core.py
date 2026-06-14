@@ -250,3 +250,119 @@ def optimize_and_ocr_pdf(input_path, output_path, lang="eng+mal"):
         return True, "Success"
     except Exception as e:
         return False, str(e)
+
+def encrypt_pdf(input_path, output_path, password):
+    try:
+        doc = fitz.open(input_path)
+        doc.save(output_path, encryption=fitz.PDF_ENCRYPT_AES_256, owner_pw=password, user_pw=password)
+        doc.close()
+        return True, "Success"
+    except Exception as e:
+        return False, str(e)
+
+def decrypt_pdf(input_path, output_path, password):
+    try:
+        doc = fitz.open(input_path)
+        if doc.authenticate(password):
+            doc.save(output_path)
+            doc.close()
+            return True, "Success"
+        else:
+            doc.close()
+            return False, "Incorrect password"
+    except Exception as e:
+        return False, str(e)
+
+def watermark_pdf(input_path, output_path, text=None, image_path=None, opacity=0.3):
+    try:
+        doc = fitz.open(input_path)
+        for page in doc:
+            rect = page.rect
+            if text:
+                font_size = min(rect.width, rect.height) / 10
+                page.insert_text(
+                    (rect.width / 4, rect.height / 2),
+                    text,
+                    fontsize=font_size,
+                    color=(0.5, 0.5, 0.5),
+                    fill_opacity=opacity,
+                    rotate=45
+                )
+            elif image_path:
+                try:
+                    img = Image.open(image_path).convert("RGBA")
+                    alpha = img.split()[3]
+                    alpha = alpha.point(lambda p: int(p * opacity))
+                    img.putalpha(alpha)
+                    
+                    img_byte_arr = io.BytesIO()
+                    img.save(img_byte_arr, format='PNG')
+                    img_bytes = img_byte_arr.getvalue()
+                    
+                    img_rect = fitz.Rect(rect.width/4, rect.height/4, rect.width*3/4, rect.height*3/4)
+                    page.insert_image(img_rect, stream=img_bytes, keep_proportion=True)
+                except Exception as e:
+                    print(f"Error watermarking image: {e}")
+                    
+        doc.save(output_path)
+        doc.close()
+        return True, "Success"
+    except Exception as e:
+        return False, str(e)
+
+def rotate_pages(input_path, output_path, rotation_dict):
+    """rotation_dict is {page_index: rotation_angle_in_degrees}"""
+    try:
+        doc = fitz.open(input_path)
+        for page_idx, angle in rotation_dict.items():
+            if 0 <= page_idx < len(doc):
+                page = doc[page_idx]
+                page.set_rotation(page.rotation + angle)
+        doc.save(output_path)
+        doc.close()
+        return True, "Success"
+    except Exception as e:
+        return False, str(e)
+
+def split_pdf(input_path, output_dir, mode="burst", start_page=0, end_page=0):
+    try:
+        doc = fitz.open(input_path)
+        base_name = os.path.splitext(os.path.basename(input_path))[0]
+        
+        if mode == "burst":
+            for i in range(len(doc)):
+                new_doc = fitz.open()
+                new_doc.insert_pdf(doc, from_page=i, to_page=i)
+                new_doc.save(os.path.join(output_dir, f"{base_name}_page_{i+1}.pdf"))
+                new_doc.close()
+        elif mode == "range":
+            new_doc = fitz.open()
+            start_page = max(0, min(start_page, len(doc) - 1))
+            end_page = max(0, min(end_page, len(doc) - 1))
+            if start_page <= end_page:
+                new_doc.insert_pdf(doc, from_page=start_page, to_page=end_page)
+                new_doc.save(os.path.join(output_dir, f"{base_name}_extracted.pdf"))
+            new_doc.close()
+        doc.close()
+        return True, "Success"
+    except Exception as e:
+        return False, str(e)
+
+def get_metadata(input_path):
+    try:
+        doc = fitz.open(input_path)
+        meta = doc.metadata
+        doc.close()
+        return True, meta
+    except Exception as e:
+        return False, str(e)
+
+def edit_metadata(input_path, output_path, metadata_dict):
+    try:
+        doc = fitz.open(input_path)
+        doc.set_metadata(metadata_dict)
+        doc.save(output_path)
+        doc.close()
+        return True, "Success"
+    except Exception as e:
+        return False, str(e)

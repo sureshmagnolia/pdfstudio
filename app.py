@@ -83,31 +83,45 @@ class App(ctk.CTk):
         # Sidebar
         self.sidebar_frame = ctk.CTkFrame(self, width=200, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(6, weight=1)
+        self.sidebar_frame.grid_rowconfigure(12, weight=1)
 
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="PDF Studio", font=ctk.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
         self.btn_compress = ctk.CTkButton(self.sidebar_frame, text="Compress PDF", command=lambda: self.select_frame("compress"))
-        self.btn_compress.grid(row=1, column=0, padx=20, pady=10)
-        self.btn_remove = ctk.CTkButton(self.sidebar_frame, text="Remove Pages", command=lambda: self.select_frame("remove"))
-        self.btn_remove.grid(row=2, column=0, padx=20, pady=10)
+        self.btn_compress.grid(row=1, column=0, padx=20, pady=5)
+        self.btn_remove = ctk.CTkButton(self.sidebar_frame, text="Organize Pages", command=lambda: self.select_frame("remove"))
+        self.btn_remove.grid(row=2, column=0, padx=20, pady=5)
         self.btn_merge = ctk.CTkButton(self.sidebar_frame, text="Merge PDFs", command=lambda: self.select_frame("merge"))
-        self.btn_merge.grid(row=3, column=0, padx=20, pady=10)
+        self.btn_merge.grid(row=3, column=0, padx=20, pady=5)
+        self.btn_split = ctk.CTkButton(self.sidebar_frame, text="Split PDF", command=lambda: self.select_frame("split"))
+        self.btn_split.grid(row=4, column=0, padx=20, pady=5)
         self.btn_booklet = ctk.CTkButton(self.sidebar_frame, text="Booklet Maker", command=lambda: self.select_frame("booklet"))
-        self.btn_booklet.grid(row=4, column=0, padx=20, pady=10)
+        self.btn_booklet.grid(row=5, column=0, padx=20, pady=5)
+        
+        self.btn_watermark = ctk.CTkButton(self.sidebar_frame, text="Watermark", command=lambda: self.select_frame("watermark"))
+        self.btn_watermark.grid(row=6, column=0, padx=20, pady=5)
+        self.btn_security = ctk.CTkButton(self.sidebar_frame, text="Security", command=lambda: self.select_frame("security"))
+        self.btn_security.grid(row=7, column=0, padx=20, pady=5)
+        self.btn_metadata = ctk.CTkButton(self.sidebar_frame, text="Metadata", command=lambda: self.select_frame("metadata"))
+        self.btn_metadata.grid(row=8, column=0, padx=20, pady=5)
+        
         self.btn_ocr = ctk.CTkButton(self.sidebar_frame, text="OCR (Eng/Mal)", command=lambda: self.select_frame("ocr"))
-        self.btn_ocr.grid(row=5, column=0, padx=20, pady=10)
+        self.btn_ocr.grid(row=9, column=0, padx=20, pady=5)
         self.btn_opt_ocr = ctk.CTkButton(self.sidebar_frame, text="Optimize & OCR", command=lambda: self.select_frame("opt_ocr"), fg_color="purple")
-        self.btn_opt_ocr.grid(row=6, column=0, padx=20, pady=10)
+        self.btn_opt_ocr.grid(row=10, column=0, padx=20, pady=5)
 
         # Main frames
         self.frames = {}
         
         self.frames["compress"] = CompressFrame(self)
-        self.frames["remove"] = RemoveFrame(self)
+        self.frames["remove"] = OrganizeFrame(self)
         self.frames["merge"] = MergeFrame(self)
+        self.frames["split"] = SplitFrame(self)
         self.frames["booklet"] = BookletFrame(self)
+        self.frames["watermark"] = WatermarkFrame(self)
+        self.frames["security"] = SecurityFrame(self)
+        self.frames["metadata"] = MetadataFrame(self)
         self.frames["ocr"] = OCRFrame(self)
         self.frames["opt_ocr"] = OptimizeOCRFrame(self)
 
@@ -216,12 +230,13 @@ class CompressFrame(BaseFrame):
             return
         self.run_async(pdf_core.compress_pdf, self.input_file, self.output_file)
 
-class RemoveFrame(BaseFrame):
+class OrganizeFrame(BaseFrame):
     def __init__(self, master):
         super().__init__(master)
         self.checkboxes = {}
+        self.rotations = {}
         
-        self.lbl_title = ctk.CTkLabel(self, text="Remove Pages", font=ctk.CTkFont(size=24, weight="bold"))
+        self.lbl_title = ctk.CTkLabel(self, text="Organize Pages", font=ctk.CTkFont(size=24, weight="bold"))
         self.lbl_title.grid(row=0, column=0, pady=(20, 20))
 
         self.input_var = ctk.StringVar(value="No file selected")
@@ -230,16 +245,16 @@ class RemoveFrame(BaseFrame):
         self.lbl_in = ctk.CTkLabel(self, textvariable=self.input_var)
         self.lbl_in.grid(row=2, column=0, pady=(0, 10))
 
-        self.lbl_desc = ctk.CTkLabel(self, text="Select pages to REMOVE in the preview pane on the right.")
+        self.lbl_desc = ctk.CTkLabel(self, text="Tick to remove, or select rotation for pages in the preview pane.")
         self.lbl_desc.grid(row=3, column=0)
 
         self.out_var = ctk.StringVar(value="No output selected")
-        self.btn_out = ctk.CTkButton(self, text="Select Save Location", command=lambda: self.select_output_file(self.out_var, default_name="edited.pdf"))
+        self.btn_out = ctk.CTkButton(self, text="Select Save Location", command=lambda: self.select_output_file(self.out_var, default_name="organized.pdf"))
         self.btn_out.grid(row=5, column=0, pady=10)
         self.lbl_out = ctk.CTkLabel(self, textvariable=self.out_var)
         self.lbl_out.grid(row=6, column=0, pady=(0, 20))
 
-        self.btn_run = ctk.CTkButton(self, text="Run Removal", command=self.process, fg_color="red", hover_color="darkred")
+        self.btn_run = ctk.CTkButton(self, text="Run Organizer", command=self.process, fg_color="blue", hover_color="darkblue")
         self.btn_run.grid(row=7, column=0, pady=10)
 
     def _add_thumbnail(self, page_num, ctk_img, filepath):
@@ -251,13 +266,15 @@ class RemoveFrame(BaseFrame):
         lbl.pack(pady=2)
         lbl.bind("<Double-Button-1>", lambda e, p=page_num: self.open_full_preview(filepath, p))
         
-        var = ctk.BooleanVar(value=False)
-        self.checkboxes[page_num] = var
-        chk = ctk.CTkCheckBox(container, text=f"Remove Page {page_num+1}", variable=var)
+        var_rm = ctk.BooleanVar(value=False)
+        self.checkboxes[page_num] = var_rm
+        chk = ctk.CTkCheckBox(container, text=f"Remove Page {page_num+1}", variable=var_rm)
         chk.pack(pady=2)
         
-        # clicking thumbnail toggles checkbox
-        lbl.bind("<Button-1>", lambda e, v=var: v.set(not v.get()), add="+")
+        rot_var = ctk.StringVar(value="0°")
+        self.rotations[page_num] = rot_var
+        opt = ctk.CTkOptionMenu(container, values=["0°", "90°", "180°", "270°"], variable=rot_var)
+        opt.pack(pady=2)
 
     def process(self):
         if not self.input_file or not self.output_file:
@@ -265,8 +282,13 @@ class RemoveFrame(BaseFrame):
             return
             
         remove_pages = [p for p, var in self.checkboxes.items() if var.get()]
-        if not remove_pages:
-            messagebox.showwarning("Warning", "No pages ticked for removal.")
+        rotation_dict = {}
+        for p, var in self.rotations.items():
+            if not self.checkboxes[p].get() and var.get() != "0°":
+                rotation_dict[p] = int(var.get().replace("°", ""))
+                
+        if not remove_pages and not rotation_dict:
+            messagebox.showwarning("Warning", "No pages ticked for removal or rotation.")
             return
             
         import fitz
@@ -276,8 +298,29 @@ class RemoveFrame(BaseFrame):
         
         keep_pages = [p for p in range(total) if p not in remove_pages]
         
-        if messagebox.askyesno("Confirm Removal", f"Are you sure you want to remove {len(remove_pages)} page(s)?"):
-            self.run_async(pdf_core.remove_pages, self.input_file, self.output_file, keep_pages)
+        def run_organize():
+            temp_path = self.output_file + ".tmp.pdf" if rotation_dict else self.output_file
+            if remove_pages:
+                success, msg = pdf_core.remove_pages(self.input_file, temp_path, keep_pages)
+                if not success: return False, msg
+            else:
+                import shutil
+                shutil.copy(self.input_file, temp_path)
+                
+            if rotation_dict:
+                # Re-map rotation indices since pages were removed
+                new_rotation_dict = {}
+                for old_idx, angle in rotation_dict.items():
+                    if old_idx in keep_pages:
+                        new_idx = keep_pages.index(old_idx)
+                        new_rotation_dict[new_idx] = angle
+                success, msg = pdf_core.rotate_pages(temp_path, self.output_file, new_rotation_dict)
+                if os.path.exists(temp_path) and temp_path != self.output_file:
+                    os.remove(temp_path)
+                return success, msg
+            return True, "Success"
+            
+        self.run_async(run_organize)
 
 class MergeFrame(BaseFrame):
     def __init__(self, master):
@@ -457,6 +500,229 @@ class OptimizeOCRFrame(BaseFrame):
             messagebox.showwarning("Warning", "Select input and output files.")
             return
         self.run_async(pdf_core.optimize_and_ocr_pdf, self.input_file, self.output_file, self.lang_var.get())
+
+class SplitFrame(BaseFrame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.lbl_title = ctk.CTkLabel(self, text="Split PDF", font=ctk.CTkFont(size=24, weight="bold"))
+        self.lbl_title.grid(row=0, column=0, pady=(20, 20))
+
+        self.input_var = ctk.StringVar(value="No file selected")
+        self.btn_in = ctk.CTkButton(self, text="Select Input PDF", command=lambda: self.select_input_file(self.input_var))
+        self.btn_in.grid(row=1, column=0, pady=10)
+        self.lbl_in = ctk.CTkLabel(self, textvariable=self.input_var)
+        self.lbl_in.grid(row=2, column=0, pady=(0, 10))
+
+        self.mode_var = ctk.StringVar(value="burst")
+        self.radio_burst = ctk.CTkRadioButton(self, text="Burst (Extract all to single pages)", variable=self.mode_var, value="burst")
+        self.radio_burst.grid(row=3, column=0, pady=5)
+        self.radio_range = ctk.CTkRadioButton(self, text="Extract Range", variable=self.mode_var, value="range")
+        self.radio_range.grid(row=4, column=0, pady=5)
+        
+        self.range_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.range_frame.grid(row=5, column=0, pady=10)
+        ctk.CTkLabel(self.range_frame, text="Start Page:").pack(side="left", padx=5)
+        self.entry_start = ctk.CTkEntry(self.range_frame, width=50)
+        self.entry_start.pack(side="left")
+        ctk.CTkLabel(self.range_frame, text="End Page:").pack(side="left", padx=5)
+        self.entry_end = ctk.CTkEntry(self.range_frame, width=50)
+        self.entry_end.pack(side="left")
+
+        self.out_var = ctk.StringVar(value="No output directory selected")
+        self.btn_out = ctk.CTkButton(self, text="Select Save Directory", command=self.select_out_dir)
+        self.btn_out.grid(row=6, column=0, pady=10)
+        self.lbl_out = ctk.CTkLabel(self, textvariable=self.out_var)
+        self.lbl_out.grid(row=7, column=0, pady=(0, 20))
+
+        self.btn_run = ctk.CTkButton(self, text="Run Split", command=self.process, fg_color="blue")
+        self.btn_run.grid(row=8, column=0, pady=10)
+
+    def select_out_dir(self):
+        dir_path = filedialog.askdirectory(title="Select Save Directory")
+        if dir_path:
+            self.output_file = dir_path
+            self.out_var.set(f"Directory: {os.path.basename(dir_path)}")
+
+    def process(self):
+        if not self.input_file or not self.output_file:
+            messagebox.showwarning("Warning", "Select input file and output directory.")
+            return
+        
+        mode = self.mode_var.get()
+        start = 0
+        end = 0
+        if mode == "range":
+            try:
+                start = int(self.entry_start.get()) - 1
+                end = int(self.entry_end.get()) - 1
+            except ValueError:
+                messagebox.showerror("Error", "Please enter valid page numbers.")
+                return
+                
+        self.run_async(pdf_core.split_pdf, self.input_file, self.output_file, mode, start, end)
+
+
+class WatermarkFrame(BaseFrame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.lbl_title = ctk.CTkLabel(self, text="Add Watermark", font=ctk.CTkFont(size=24, weight="bold"))
+        self.lbl_title.grid(row=0, column=0, pady=(20, 20))
+
+        self.input_var = ctk.StringVar(value="No file selected")
+        self.btn_in = ctk.CTkButton(self, text="Select Input PDF", command=lambda: self.select_input_file(self.input_var))
+        self.btn_in.grid(row=1, column=0, pady=10)
+        self.lbl_in = ctk.CTkLabel(self, textvariable=self.input_var)
+        self.lbl_in.grid(row=2, column=0, pady=(0, 10))
+        
+        self.tabview = ctk.CTkTabview(self, width=300, height=150)
+        self.tabview.grid(row=3, column=0, pady=10)
+        self.tabview.add("Text")
+        self.tabview.add("Image")
+        
+        # Text Tab
+        ctk.CTkLabel(self.tabview.tab("Text"), text="Watermark Text:").pack(pady=5)
+        self.entry_text = ctk.CTkEntry(self.tabview.tab("Text"), width=200)
+        self.entry_text.pack(pady=5)
+        
+        # Image Tab
+        self.img_var = ctk.StringVar(value="No image selected")
+        ctk.CTkButton(self.tabview.tab("Image"), text="Select Image (PNG/JPG)", command=self.select_image).pack(pady=5)
+        ctk.CTkLabel(self.tabview.tab("Image"), textvariable=self.img_var).pack(pady=5)
+        self.image_path = None
+
+        self.out_var = ctk.StringVar(value="No output selected")
+        self.btn_out = ctk.CTkButton(self, text="Select Save Location", command=lambda: self.select_output_file(self.out_var, default_name="watermarked.pdf"))
+        self.btn_out.grid(row=4, column=0, pady=10)
+        self.lbl_out = ctk.CTkLabel(self, textvariable=self.out_var)
+        self.lbl_out.grid(row=5, column=0, pady=(0, 20))
+
+        self.btn_run = ctk.CTkButton(self, text="Apply Watermark", command=self.process, fg_color="blue")
+        self.btn_run.grid(row=6, column=0, pady=10)
+
+    def select_image(self):
+        file = filedialog.askopenfilename(title="Select Watermark Image", filetypes=[("Image Files", "*.png *.jpg *.jpeg")])
+        if file:
+            self.image_path = file
+            self.img_var.set(os.path.basename(file))
+
+    def process(self):
+        if not self.input_file or not self.output_file:
+            messagebox.showwarning("Warning", "Select input and output files.")
+            return
+            
+        current_tab = self.tabview.get()
+        text = None
+        img = None
+        
+        if current_tab == "Text":
+            text = self.entry_text.get()
+            if not text:
+                messagebox.showwarning("Warning", "Please enter watermark text.")
+                return
+        else:
+            img = self.image_path
+            if not img:
+                messagebox.showwarning("Warning", "Please select an image.")
+                return
+                
+        self.run_async(pdf_core.watermark_pdf, self.input_file, self.output_file, text, img, 0.3)
+
+
+class SecurityFrame(BaseFrame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.lbl_title = ctk.CTkLabel(self, text="Security & Encryption", font=ctk.CTkFont(size=24, weight="bold"))
+        self.lbl_title.grid(row=0, column=0, pady=(20, 20))
+
+        self.input_var = ctk.StringVar(value="No file selected")
+        self.btn_in = ctk.CTkButton(self, text="Select Input PDF", command=lambda: self.select_input_file(self.input_var))
+        self.btn_in.grid(row=1, column=0, pady=10)
+        self.lbl_in = ctk.CTkLabel(self, textvariable=self.input_var)
+        self.lbl_in.grid(row=2, column=0, pady=(0, 10))
+
+        self.mode_var = ctk.StringVar(value="encrypt")
+        self.radio_enc = ctk.CTkRadioButton(self, text="Encrypt (Add Password)", variable=self.mode_var, value="encrypt")
+        self.radio_enc.grid(row=3, column=0, pady=5)
+        self.radio_dec = ctk.CTkRadioButton(self, text="Decrypt (Remove Password)", variable=self.mode_var, value="decrypt")
+        self.radio_dec.grid(row=4, column=0, pady=5)
+        
+        ctk.CTkLabel(self, text="Password:").grid(row=5, column=0, pady=(10, 0))
+        self.entry_pass = ctk.CTkEntry(self, width=200, show="*")
+        self.entry_pass.grid(row=6, column=0, pady=5)
+
+        self.out_var = ctk.StringVar(value="No output selected")
+        self.btn_out = ctk.CTkButton(self, text="Select Save Location", command=lambda: self.select_output_file(self.out_var, default_name="secured.pdf"))
+        self.btn_out.grid(row=7, column=0, pady=10)
+        self.lbl_out = ctk.CTkLabel(self, textvariable=self.out_var)
+        self.lbl_out.grid(row=8, column=0, pady=(0, 20))
+
+        self.btn_run = ctk.CTkButton(self, text="Execute", command=self.process, fg_color="darkred")
+        self.btn_run.grid(row=9, column=0, pady=10)
+
+    def process(self):
+        if not self.input_file or not self.output_file:
+            messagebox.showwarning("Warning", "Select input and output files.")
+            return
+            
+        password = self.entry_pass.get()
+        if not password:
+            messagebox.showwarning("Warning", "Please enter a password.")
+            return
+            
+        if self.mode_var.get() == "encrypt":
+            self.run_async(pdf_core.encrypt_pdf, self.input_file, self.output_file, password)
+        else:
+            self.run_async(pdf_core.decrypt_pdf, self.input_file, self.output_file, password)
+
+
+class MetadataFrame(BaseFrame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.lbl_title = ctk.CTkLabel(self, text="PDF Metadata", font=ctk.CTkFont(size=24, weight="bold"))
+        self.lbl_title.grid(row=0, column=0, pady=(20, 20))
+
+        self.input_var = ctk.StringVar(value="No file selected")
+        self.btn_in = ctk.CTkButton(self, text="Select Input PDF", command=self.load_metadata)
+        self.btn_in.grid(row=1, column=0, pady=10)
+        self.lbl_in = ctk.CTkLabel(self, textvariable=self.input_var)
+        self.lbl_in.grid(row=2, column=0, pady=(0, 10))
+        
+        self.entries = {}
+        fields = ["title", "author", "subject", "keywords", "creator", "producer"]
+        for i, field in enumerate(fields):
+            f = ctk.CTkFrame(self, fg_color="transparent")
+            f.grid(row=3+i, column=0, pady=2)
+            ctk.CTkLabel(f, text=f"{field.capitalize()}:", width=80, anchor="e").pack(side="left", padx=5)
+            entry = ctk.CTkEntry(f, width=200)
+            entry.pack(side="left")
+            self.entries[field] = entry
+
+        self.out_var = ctk.StringVar(value="No output selected")
+        self.btn_out = ctk.CTkButton(self, text="Select Save Location", command=lambda: self.select_output_file(self.out_var, default_name="meta_updated.pdf"))
+        self.btn_out.grid(row=10, column=0, pady=10)
+        self.lbl_out = ctk.CTkLabel(self, textvariable=self.out_var)
+        self.lbl_out.grid(row=11, column=0, pady=(0, 20))
+
+        self.btn_run = ctk.CTkButton(self, text="Save Metadata", command=self.process, fg_color="blue")
+        self.btn_run.grid(row=12, column=0, pady=10)
+        
+    def load_metadata(self):
+        self.select_input_file(self.input_var)
+        if self.input_file:
+            success, meta = pdf_core.get_metadata(self.input_file)
+            if success and meta:
+                for field, entry in self.entries.items():
+                    entry.delete(0, 'end')
+                    if meta.get(field):
+                        entry.insert(0, meta[field])
+
+    def process(self):
+        if not self.input_file or not self.output_file:
+            messagebox.showwarning("Warning", "Select input and output files.")
+            return
+            
+        new_meta = {field: entry.get() for field, entry in self.entries.items()}
+        self.run_async(pdf_core.edit_metadata, self.input_file, self.output_file, new_meta)
 
 if __name__ == "__main__":
     app = App()
