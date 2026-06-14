@@ -5,19 +5,14 @@ import pytesseract
 from PIL import Image
 import io
 
-if getattr(sys, 'frozen', False):
-    # Running in a bundled executable
-    base_dir = os.path.dirname(sys.executable)
-    tess_path = os.path.join(base_dir, "Tesseract-OCR", "tesseract.exe")
-    tessdata_path = os.path.join(base_dir, "tessdata")
-else:
-    # Running in a normal Python environment
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    tess_path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-    tessdata_path = os.path.join(base_dir, "tessdata")
+# Explicitly set the path to tesseract executable if needed
+TESSERACT_CMD = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+if os.path.exists(TESSERACT_CMD):
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
-pytesseract.pytesseract.tesseract_cmd = tess_path
-TESSDATA_DIR = tessdata_path
+TESSDATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tessdata")
+# Tesseract strongly prefers TESSDATA_PREFIX env var over config flags
+os.environ["TESSDATA_PREFIX"] = TESSDATA_DIR
 
 def compress_pdf(input_path, output_path):
     """Compresses a PDF aggressively by downsampling images safely using PyMuPDF natively."""
@@ -196,25 +191,28 @@ def create_booklet(input_path, output_path, paper_size="A4"):
     except Exception as e:
         return False, str(e)
 
-def ocr_pdf(input_path, output_path, lang="eng+mal"):
+def ocr_pdf(input_path, output_path, lang="eng+mal", pages=None):
     """
     Performs OCR on the PDF and creates a new searchable PDF, 
     or simply extracts text and saves it to a text file.
-    Since we want to preserve PDF format, we can use pytesseract's image_to_pdf_or_hocr
     """
     try:
         doc = fitz.open(input_path)
         merged_pdf = fitz.open()
         
         for page_num in range(len(doc)):
+            if pages is not None and page_num not in pages:
+                # Keep original page
+                merged_pdf.insert_pdf(doc, from_page=page_num, to_page=page_num)
+                continue
+                
             page = doc[page_num]
             # Render page to image (DPI=300 for good OCR)
             pix = page.get_pixmap(dpi=300)
             img = Image.open(io.BytesIO(pix.tobytes("png")))
             
             # Get PDF bytes from pytesseract
-            custom_config = f'--tessdata-dir "{TESSDATA_DIR}"'
-            pdf_bytes = pytesseract.image_to_pdf_or_hocr(img, extension='pdf', lang=lang, config=custom_config)
+            pdf_bytes = pytesseract.image_to_pdf_or_hocr(img, extension='pdf', lang=lang)
             
             # Open the single page PDF and insert into merged
             with fitz.open("pdf", pdf_bytes) as pdf_page:
@@ -227,13 +225,13 @@ def ocr_pdf(input_path, output_path, lang="eng+mal"):
     except Exception as e:
         return False, str(e)
 
-def optimize_and_ocr_pdf(input_path, output_path, lang="eng+mal"):
+def optimize_and_ocr_pdf(input_path, output_path, lang="eng+mal", pages=None):
     """Runs OCR to create a clean text layer (removing junk), then aggressively compresses the images."""
     try:
         temp_ocr_path = output_path + ".temp.pdf"
         
-        # Step 1: OCR (this rasterizes the page, removing old vector junk, and adds clean text)
-        success, msg = ocr_pdf(input_path, temp_ocr_path, lang)
+        # Step 1: OCR
+        success, msg = ocr_pdf(input_path, temp_ocr_path, lang, pages=pages)
         if not success:
             return False, f"OCR Failed: {msg}"
             
@@ -273,10 +271,13 @@ def decrypt_pdf(input_path, output_path, password):
     except Exception as e:
         return False, str(e)
 
-def watermark_pdf(input_path, output_path, text=None, image_path=None, opacity=0.3):
+def watermark_pdf(input_path, output_path, text=None, image_path=None, opacity=0.3, pages=None):
     try:
         doc = fitz.open(input_path)
-        for page in doc:
+        for i, page in enumerate(doc):
+            if pages is not None and i not in pages:
+                continue
+                
             rect = page.rect
             if text:
                 font_size = min(rect.width, rect.height) / 10
@@ -364,5 +365,35 @@ def edit_metadata(input_path, output_path, metadata_dict):
         doc.save(output_path)
         doc.close()
         return True, "Success"
+    except Exception as e:
+        return False, str(e)
+
+
+def export_to_images(input_path, output_dir, fmt="png", pages=None):
+    try:
+        import os, fitz, io
+        from PIL import Image
+        doc = fitz.open(input_path)
+        exported = 0
+        for i, page in enumerate(doc):
+            if pages is not None and i not in pages:
+                continue
+            pix = page.get_pixmap(dpi=300)
+            img = Image.open(io.BytesIO(pix.tobytes("png")))
+            if fmt.lower() in ["jpg", "jpeg"]:
+                img = img.convert("RGB")
+            out_path = os.path.join(output_dir, f"page_{i+1}.{fmt.lower()}")
+            img.save(out_path)
+            exported += 1
+        doc.close()
+        return True, f"Exported {exported} images."
+    except Exception as e:
+        return False, str(e)
+
+def print_pdf(pdf_path):
+    try:
+        import os
+        os.startfile(pdf_path, "print")
+        return True, "Print job sent to system."
     except Exception as e:
         return False, str(e)
