@@ -12,7 +12,6 @@ build_exe_options = {
         (customtkinter_path, "customtkinter"), # Required for modern UI rendering
         ("tessdata", "tessdata"),              # Language packs
         (r"C:\Program Files\Tesseract-OCR", "Tesseract-OCR"), # The OCR engine itself (~240MB)
-        ("icon.ico", "icon.ico"),              # App icon
     ],
     "excludes": ["unittest", "email", "http", "xml", "pydoc"]
 }
@@ -39,8 +38,7 @@ setup(
             base=base, 
             target_name="Magnolia PDF Studio.exe",
             shortcut_name="Magnolia PDF Studio",
-            shortcut_dir="DesktopFolder",
-            icon="icon.ico"
+            shortcut_dir="DesktopFolder"
         )
     ]
 )
