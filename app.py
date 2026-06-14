@@ -63,11 +63,20 @@ class FullPreviewWindow(ctk.CTkToplevel):
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-
-        self.title("PDF & OCR Studio")
-        self.geometry("800x600")
-
-        # Layout
+        self.title("Magnolia PDF Studio")
+        self.geometry("1000x700")
+        
+        # Set window icon
+        import sys
+        if getattr(sys, 'frozen', False):
+            base_dir = os.path.dirname(sys.executable)
+        else:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            
+        icon_path = os.path.join(base_dir, "icon.ico")
+        if os.path.exists(icon_path):
+            self.iconbitmap(icon_path)
+            
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
