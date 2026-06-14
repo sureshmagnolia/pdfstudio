@@ -1,0 +1,24 @@
+# Environments
+venv/
+env/
+.env
+
+# Build files
+dist/
+build/
+*.msi
+*.exe
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs
+.vscode/
+.idea/
+
+# Custom data
+tessdata/
+*.pdf
+*.png

@@ -1,0 +1,5 @@
+setup.py
+Magnolia_PDF_Studio.egg-info/PKG-INFO
+Magnolia_PDF_Studio.egg-info/SOURCES.txt
+Magnolia_PDF_Studio.egg-info/dependency_links.txt
+Magnolia_PDF_Studio.egg-info/top_level.txt
